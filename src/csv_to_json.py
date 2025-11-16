@@ -3,13 +3,19 @@ import json
 from pdf_to_csv import GOE
 
 
-
-Config={
-    "LargeOutput":False,
-    "SeparateDowngrades":False,
-    "ReductionCategory":True,
-    "GOE":False
-}
+class Config:
+    def __init__(self, largeOutput=False, separateDowngrades=True, reductionCategory=False, goe=False):
+        self.largeOutput = largeOutput
+        self.separateDowngrades = separateDowngrades
+        self.reductionCategory = reductionCategory
+        self.goe = goe
+    
+    @classmethod
+    def synchro_skate_calc(cls,reductionCategory=True, goe=False):
+        return cls(False,True,reductionCategory,goe)
+    
+    def Dg_Value(self,value:bool):
+        self.separateDowngrades=value
 
 ### -------------- Are Category Equal--------------------
 
@@ -51,8 +57,8 @@ def DowngradesValueEqual(df,dg): #=findDGval(df)
 
 # -------------- Create the Dictionnary (futur json)
 
-def outputValue(tup,config):
-    if config["GOE"]:
+def outputValue(tup,config:Config):
+    if config.goe:
         return {"base":tup.BASE,"goe":dict(zip(GOE,tup[7:18]))}
     else :
         return tup.BASE
@@ -61,11 +67,11 @@ def outputValue(tup,config):
 def DowngradeKey(DowngradeValue):
     return "NoDg" if DowngradeValue==0 else DowngradeValue*"<"
 
-def fillElement(elementGroup,config,element):
+def fillElement(elementGroup,config:Config,element):
     
     #Without Additional Feature
     if elementGroup["AFNot"].isna().all():
-        if config["SeparateDowngrades"]:
+        if config.separateDowngrades:
             for Lvl in elementGroup.itertuples():
                 element[Lvl.ElmntLvl]=outputValue(Lvl,config)
         else:
@@ -76,7 +82,7 @@ def fillElement(elementGroup,config,element):
                     element[LvlElem][key]=outputValue(Dg,config)
    #with additional Feature                 
     else:
-        if config["SeparateDowngrades"]:
+        if config.separateDowngrades:
             for LvlElem,GroupLvl in elementGroup.groupby('ElmntLvl'):
                 element[LvlElem]={}
                 for AddF in GroupLvl.itertuples():
@@ -98,10 +104,10 @@ def LargeJson(df):
         element[row.ElmtNot]={"base":row.BASE,"goe":dict(zip(GOE,row[7:18]))}
     return element
 
-def reductionCategory(df,dictElement,config):
+def reductionCategory(df,dictElement,config:Config):
     cat=FindCategoryofElements(df)
    
-    if  config["SeparateDowngrades"]:
+    if  config.separateDowngrades:
         query="DGrade == 0"
         tempdf = df.query(query)
     else:
@@ -126,23 +132,23 @@ def reductionCategory(df,dictElement,config):
 
 ### ----------------------- Json Implementation -----------------------
 
-def returnDict(df,config):
-    if config["LargeOutput"]:
+def returnDict(df,config:Config):
+    if config.largeOutput:
         
         return LargeJson(df)
     
     dictElement={}
     dg=findDGval(df)
     if not DowngradesValueEqual(df,dg) :
-        config["SeparateDowngrades"]=False
+        config.Dg_Value(False)
 
     query=""
-    if config["SeparateDowngrades"]:
+    if config.separateDowngrades:
         dictElement["Downgrades"]=dict(zip(["<","<<"],dg))
         query="DGrade == 0"
     
 
-    if config["ReductionCategory"]:
+    if config.reductionCategory:
         query=reductionCategory(df,dictElement,config)
     
     iterDf= df.query(query) if query else df
