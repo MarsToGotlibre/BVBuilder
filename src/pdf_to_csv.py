@@ -6,7 +6,7 @@ import logging
 
 logging.basicConfig(
     level=logging.INFO,       
-    format="%(levelname)s - %(message)s"
+    format="[%(levelname)s] - %(message)s"
 )
 
 
@@ -16,6 +16,27 @@ Header=["Levels","ElmtNot","AFNot"]+GOE
 nbrCol=14
 
 ### --------------------- Title Extraction -----------------------------------
+class PDFLoader:
+    def __init__(self, filename):
+        try:
+            self.pdf = pdfplumber.open(filename)
+        except Exception as e:
+            raise RuntimeError(f"Unable to open PDF {filename}: {e}")
+        self.filename=filename
+
+    def get_page_lines(self, pagenumber):
+        try:
+            page = self.pdf.pages[pagenumber - 1]
+            return page.extract_text_lines(return_chars=False)
+        except IndexError:
+            logging.error(f"Page {pagenumber} does not exist")
+            return None
+        except Exception as e:
+            logging.error(f"Error on page {pagenumber}: {e}")
+            return None
+
+    def close(self):
+        self.pdf.close()
 
 def returnPageLines(filename,pagenumber):
     pdf = pdfplumber.open(filename)
@@ -87,8 +108,8 @@ def CleanNonElementsTable(pagedf):
 
 def TitleAsManyTable(dfs,TitleList):
     if len(dfs)!=len(TitleList):
-        logging.error("Error, not as many title as tables")
-        logging.error(f"{len(dfs)} dataframes while  having {len(TitleList)} Titles")
+        logging.warning("Error, not as many title as tables")
+        logging.warning(f"{len(dfs)} dataframes while  having {len(TitleList)} Titles")
         return False
     else :
         return True
@@ -183,11 +204,12 @@ def AddFeat(df):
 
 ### --------------------------- Dataframe Build ------------------------------------
 
-def pageIntoListDf(filename,page):
-    lines=returnPageLines(filename,page)
+def pageIntoListDf(PdfLoader:PDFLoader,page:int):
+    #lines=returnPageLines(filename,page)
+    lines=PdfLoader.get_page_lines(page)
     ListElem=FindElementName(lines)
 
-    dfs=returnTablesFromPage(filename,page)
+    dfs=returnTablesFromPage(PdfLoader.filename,page)
     
     CleanNonElementsTable(dfs)
     if TitleAsManyTable(dfs,ListElem):
@@ -217,13 +239,17 @@ def DfLvlAndDowngradest(df):
 
 def ExtractDocumentperPage(filename,beginpage,endpage):
     DfList=[]
+    pdfloader=PDFLoader(filename)
+
     for page in range(beginpage,endpage+1):
-        pageList=pageIntoListDf(filename,page)
+        pageList=pageIntoListDf(pdfloader,page)
         if VerifyAsso(pageList):
             DfList+=pageList
+
+    pdfloader.close()
     return DfList
 
-def CreateFinalDf(filename,beginpage,endpage,outputfilename):
+def CreateCSV(filename,beginpage,endpage,outputfilename):
     DFList=ExtractDocumentperPage(filename,beginpage,endpage)
     BigDf=pd.concat(DFList,ignore_index=True)
     DfLvlAndDowngradest(BigDf)
