@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 from src.pdf_to_csv import CreateCSV
+from src.csv_to_json import returnJsonFile,Config
 import logging
 
 logging.basicConfig(
@@ -46,14 +47,14 @@ def build_parser():
     json_parser = subparsers.add_parser("csvtojson", parents=[json_parent], help="Convert CSV to JSON")
 
     json_parser.add_argument("csv_file")
-    json_parser.add_argument("-o", "--output", default="output.json")
+    json_parser.add_argument("-o", "--output")
 
     # ---------- FULL PIPELINE ----------
     all_parser = subparsers.add_parser("all", parents=[csv_parent,json_parent],help="PDF → CSV → JSON")
     
     all_parser.add_argument("pdf_file")
     all_parser.add_argument("--temp-csv")
-    all_parser.add_argument("-o", "--json-output", default="output.json")
+    all_parser.add_argument("-o", "--output")
 
     return parser
 
@@ -75,16 +76,16 @@ def check_extention(path,allowed_ext):
     if path.suffix.lower() != allowed_ext:
         raise ValueError(f"Invalid file type: {path.suffix}. Expected one of: {allowed_ext}")
 
-def check_output_file(str_path,allowed_ext):
-    path=Path(str_path)
-    check_extention(path,allowed_ext)
+#def check_output_file(str_path,allowed_ext):
+#    path=Path(str_path)
+#    check_extention(path,allowed_ext)
 
 def name(args):
     name=""
     if args.large_output:
         return"-large_output"
     if args.synchro_skate_calc:
-        name+="-synchro_skate_calc"
+        return"-synchro_skate_calc"
     if args.separate_downgrades:
         name+="-separate_downgrades"
     if args.reduction_category:
@@ -93,8 +94,12 @@ def name(args):
         name+="-goe"
     return name
 
+def jsonConfig(args):
+    if args.synchro_skate_calc:
+        return Config.synchro_skate_calc()
+    return Config(args.large_output,args.separate_downgrades,args.reduction_category,args.goe)
 
-def pdf_to_cscv(args):
+def pdf_to_csv(args):
     path=Path(args.pdf_file)
     
     check_file_exists(path)
@@ -103,17 +108,17 @@ def pdf_to_cscv(args):
     if args.end is None :
         args.end=args.begin
 
-    if args.output!=None :
-            check_extention(Path(args.output),".csv")
+    output="output" if args.pipeline=="pdftocsv" else "temp_csv"
+    if getattr(args,output)!=None :
+            check_extention(Path(getattr(args,output)),".csv")
     else :
-        args.output = f"{path.stem}-page-{str(args.begin)if args.begin==args.end else "("+str(args.begin)+"-"+str(args.end)+")"}.csv"
-    
-    print(args.pdf_file,args.begin,args.end,args.output)
+        setattr(args,output,f"{path.stem}-page-{str(args.begin)if args.begin==args.end else "("+str(args.begin)+"-"+str(args.end)+")"}.csv") 
+    #print(args.pdf_file,args.begin,args.end,output)
     #CreateCSV(args.pdf_file,args.begin,args.end,args.output)
-    return args.output
+    #return getattr(args,output)
 
 def csv_to_json(args):
-    path=Path(args.csv_file or args.temp_csv)
+    path=Path(args.csv_file if args.pipeline=="csvtojson" else args.temp_csv)
 
     check_file_exists(path)
     check_extention(path,".csv")
@@ -123,7 +128,11 @@ def csv_to_json(args):
         args.output = f"{path.stem}{name(args)}.json"
         logging.debug(args.output)
 
-    
+    #returnJsonFile(path,jsonConfig(args),args.output)
+
+def pdf_to_json(args):
+    pdf_to_csv(args)
+    csv_to_json(args)
 
 
  
@@ -133,10 +142,10 @@ if __name__ == "__main__":
     parser = build_parser()
     args = parser.parse_args()
     print()
-    
+
     print(args)
     print()
-    #pdf_to_cscv(args)
+    pdf_to_json(args)
     
     print()
     print(args)
