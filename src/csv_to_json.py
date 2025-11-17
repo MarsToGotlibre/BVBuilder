@@ -1,7 +1,8 @@
 import pandas as pd
 import json
 from src.pdf_to_csv import GOE
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Config:
     def __init__(self, largeOutput=False, separateDowngrades=True, reductionCategory=False, goe=False):
@@ -40,11 +41,15 @@ def CategoryEqual(df,ListElem):
 #----------- Are Downgrades Equal---------------------
 
 def findDGval(df):
-    rowdg1=df.query("DGrade == 1").iloc[0]
-    rowdg2=df.query("DGrade == 2").iloc[0]
-    row1=df.query(f"Element == '{rowdg1["Element"]}' and ElmntLvl == '{rowdg1["ElmntLvl"]}' and DGrade == 0")
-    row2=df.query(f"Element == '{rowdg2["Element"]}' and ElmntLvl == '{rowdg2["ElmntLvl"]}' and DGrade == 0")
-    return ((row1["BASE"]-rowdg1["BASE"]).iloc[0],(row2["BASE"]-rowdg2["BASE"]).iloc[0])
+    try :
+        rowdg1=df.query("DGrade == 1").iloc[0]
+        rowdg2=df.query("DGrade == 2").iloc[0]
+        row1=df.query(f"Element == '{rowdg1["Element"]}' and ElmntLvl == '{rowdg1["ElmntLvl"]}' and DGrade == 0")
+        row2=df.query(f"Element == '{rowdg2["Element"]}' and ElmntLvl == '{rowdg2["ElmntLvl"]}' and DGrade == 0")
+        return ((row1["BASE"]-rowdg1["BASE"]).iloc[0],(row2["BASE"]-rowdg2["BASE"]).iloc[0])
+    except Exception as e:
+        logger.warning(f"find Downgrade Value Failed : {e}")
+        return None
 
 def DowngradesValueEqual(df,dg): #=findDGval(df)
     dgdf=df.query("DGrade != 0")
@@ -105,7 +110,7 @@ def LargeJson(df):
     return element
 
 def reductionCategory(df,dictElement,config:Config):
-    cat=FindCategoryofElements(df)
+    cat=FindCategoryofElements(df,df["Category"].unique())
    
     if  config.separateDowngrades:
         query="DGrade == 0"
@@ -139,24 +144,29 @@ def returnDict(df,config:Config):
     
     dictElement={}
     dg=findDGval(df)
-    if not DowngradesValueEqual(df,dg) :
-        config.Dg_Value(False)
-
     query=""
-    if config.separateDowngrades:
-        dictElement["Downgrades"]=dict(zip(["<","<<"],dg))
-        query="DGrade == 0"
+    if dg!=None :
+        if not DowngradesValueEqual(df,dg) :
+            config.Dg_Value(False)
+            logger.info("Downgrades not equal, Downgrades not separated")
+
+        
+        if config.separateDowngrades:
+            dictElement["Downgrades"]=dict(zip(["<","<<"],dg))
+            query="DGrade == 0"
+            logger.info("Downgrades Separated")
     
 
     if config.reductionCategory:
         query=reductionCategory(df,dictElement,config)
+        logger.info("Category reducted")
     
     iterDf= df.query(query) if query else df
     
     for elem,group in iterDf.groupby('Element'):
         dictElement[elem]={}
         fillElement(group,config,dictElement[elem])
-
+    logger.info("Json structure finished")
     return dictElement
 
 # ------------------ Write Json --------------------------------
@@ -166,3 +176,4 @@ def returnJsonFile(input,config:Config,output):
     JsonDict=returnDict(df,config)
     with open(output,"w") as f :
         json.dump(JsonDict,f,indent=4)
+    logger.info(f"Json genrerated in : {output}")
