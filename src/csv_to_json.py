@@ -1,6 +1,6 @@
 import pandas as pd
 import json
-from pdf_to_csv import GOE
+from src.pdf_to_csv import GOE
 
 
 class Config:
@@ -11,8 +11,8 @@ class Config:
         self.goe = goe
     
     @classmethod
-    def synchro_skate_calc(cls,reductionCategory=True, goe=False):
-        return cls(False,True,reductionCategory,goe)
+    def synchro_skate_calc(cls):
+        return cls(False,True,True,False)
     
     def Dg_Value(self,value:bool):
         self.separateDowngrades=value
@@ -161,7 +161,7 @@ def returnDict(df,config:Config):
 
 # ------------------ Write Json --------------------------------
 
-def returnJsonFile(input,config,output):
+def returnJsonFile(input,config:Config,output):
     df=pd.read_csv(input)
     JsonDict=returnDict(df,config)
     with open(output,"w") as f :
