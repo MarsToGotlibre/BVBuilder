@@ -160,6 +160,7 @@ def VerifyAsso(dfs):
 
 def AddDowngrades(df):
     df["DGrade"]=df["ElmtNot"].astype(str).str.count("<").fillna(0).astype(int)
+    logging.info("Downgrades column added")
 
 def LevelComplete(df):
     logging.info("Verifying if all Levels are There")
@@ -189,6 +190,7 @@ def ExtractElementLvl(df):
 
 def ElementLvl(df):
     df["ElmntLvl"]=df.apply(ExtractElementLvl,axis="columns")
+    logging.info("Element Level Added")
 
 
 #Creates a clumn like "Element" and "ElmntLvl" for the Additional Feature. 
@@ -200,6 +202,7 @@ def ExtractFeat(val):
 
 def AddFeat(df):
     df[["AddFeat", "AFLvl"]] = df["AFNot"].apply(ExtractFeat).apply(pd.Series)
+    logging.info("Additional Feature Added")
 
 
 ### --------------------------- Dataframe Build ------------------------------------
@@ -226,6 +229,7 @@ def pageIntoListDf(PdfLoader:PDFLoader,page:int):
 
 def GOEtoFloat(df):
     df[GOE] = df[GOE].apply(lambda x: x.str.replace(',', '.').astype(float) if x.dtype == 'object' else x)
+    logging.info("GOE turned into Float")
 
 def DfLvlAndDowngradest(df):
     
@@ -255,5 +259,6 @@ def CreateCSV(filename,beginpage,endpage,outputfilename):
     DfLvlAndDowngradest(BigDf)
     
     BigDf.to_csv(outputfilename)
+    logging.info(f"Created csv : {outputfilename}")
     
 
