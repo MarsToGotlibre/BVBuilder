@@ -3,11 +3,7 @@ import pandas as pd
 import tabula
 import re
 import logging
-
-logging.basicConfig(
-    level=logging.INFO,       
-    format="[%(levelname)s] - %(message)s"
-)
+logger = logging.getLogger(__name__)
 
 
 minColumns=13
@@ -29,10 +25,10 @@ class PDFLoader:
             page = self.pdf.pages[pagenumber - 1]
             return page.extract_text_lines(return_chars=False)
         except IndexError:
-            logging.error(f"Page {pagenumber} does not exist")
+            logger.error(f"Page {pagenumber} does not exist")
             return None
         except Exception as e:
-            logging.error(f"Error on page {pagenumber}: {e}")
+            logger.error(f"Error on page {pagenumber}: {e}")
             return None
 
     def close(self):
@@ -69,21 +65,21 @@ def FindElementName(lines):
         if m:
             cat, sub, sym = m.groups()
             if not sym:
-                logging.debug(f"Group pattern Found : {cat}")
+                logger.debug(f"Group pattern Found : {cat}")
                 Groupe=cat
             
             else:
                 if sub :
                     
                     if Groupe:
-                        logging.debug("\t Sub Pattern found : " , sub)
+                        logger.debug("\t Sub Pattern found : " , sub)
                         ListeElem.append(Element(Groupe,sub,sym))
                     else:
-                        logging.debug("\t Sub patttern whitout group announced : " , sub)
+                        logger.debug("\t Sub patttern whitout group announced : " , sub)
                         ListeElem.append(Element(cat,sub,sym))
                     
                 else:
-                    logging.debug("Simple element found", cat)
+                    logger.debug("Simple element found", cat)
                     ListeElem.append(Element(cat,cat,sym))
     return ListeElem
 
@@ -95,21 +91,21 @@ def returnTablesFromPage(filename,pagenumber):
 
 def CleanNonElementsTable(pagedf):
     i=0
-    logging.info("Verifing if all df are the right size")
+    logger.info("Verifing if all df are the right size")
     while i < len(pagedf):
 
         if pagedf[i].shape[1]<minColumns:           
             pagedf.pop(i)
-            logging.debug(f"table number {i} removed")
-            logging.debug(f"Element number {i+1} and after are falling in {i}")
+            logger.debug(f"table number {i} removed")
+            logger.debug(f"Element number {i+1} and after are falling in {i}")
             i-=1
         i+=1
-    logging.info("Verification done")
+    logger.info("Verification done")
 
 def TitleAsManyTable(dfs,TitleList):
     if len(dfs)!=len(TitleList):
-        logging.warning("Error, not as many title as tables")
-        logging.warning(f"{len(dfs)} dataframes while  having {len(TitleList)} Titles")
+        logger.warning("Error, not as many title as tables")
+        logger.warning(f"{len(dfs)} dataframes while  having {len(TitleList)} Titles")
         return False
     else :
         return True
@@ -117,21 +113,21 @@ def TitleAsManyTable(dfs,TitleList):
 def CleanNaNLines(dfs):
     for i in range(len(dfs)):
         if dfs[i].isna().all(axis=1).any():
-            logging.debug(f"nan line found  in number {i} dataframe ")
+            logger.debug(f"nan line found  in number {i} dataframe ")
             dfs[i]=dfs[i].dropna(how="all")
         else:
-            logging.debug(f"no nan found in number {i} dataframe")
+            logger.debug(f"no nan found in number {i} dataframe")
 
 def SetColumns(dfs,Columns=nbrCol):
     for df in dfs:
         if df.shape[1]<Columns:
             df.insert(loc=2, column='new', value=pd.NA) ##Additional Feature
-            logging.debug(f"one table size {df.shape[1]} resized to {Columns}")
+            logger.debug(f"one table size {df.shape[1]} resized to {Columns}")
 
 def SetColumnName(dfs):
     for df in dfs:
         if df.shape[1]!=nbrCol: ## NOMBRE VARIBLE COLONNES
-            logging.warning("One dataframe isn't the right size, return")
+            logger.warning("One dataframe isn't the right size, return")
             return
         else:
             df.columns=Header
@@ -149,10 +145,10 @@ def VerifyAsso(dfs):
     for i in range(len(dfs)):
         df=dfs[i]
         if df["ElmtNot"][0][:-1]!=df["Element"][0]: # Always Elem Lvl B
-            logging.error(f"Something whent wrong with association : {df["ElmtNot"][0][:-1]} is not {df["Element"][0]}")
+            logger.error(f"Something whent wrong with association : {df["ElmtNot"][0][:-1]} is not {df["Element"][0]}")
             Associated=False
     if not Associated:
-        logging.info("Association went right")
+        logger.info("Association went right")
     return Associated
 
 
@@ -160,21 +156,21 @@ def VerifyAsso(dfs):
 
 def AddDowngrades(df):
     df["DGrade"]=df["ElmtNot"].astype(str).str.count("<").fillna(0).astype(int)
-    logging.info("Downgrades column added")
+    logger.info("Downgrades column added")
 
 def LevelComplete(df):
-    logging.info("Verifying if all Levels are There")
+    logger.info("Verifying if all Levels are There")
 
     if df["Levels"].isna().any():
-        logging.info("NaN entries in Levels found")
+        logger.info("NaN entries in Levels found")
         df["Levels"] = df["Levels"].ffill()
         
         if not df["Levels"].isna().any():
-            logging.info("Completion done")
+            logger.info("Completion done")
         else:
-            logging.warning("Something went wrong with completion")
+            logger.warning("Something went wrong with completion")
     else:
-        print("Levels There")
+        logger.info("Levels There")
 
 
 # Adds a columns for the element Lvl. Different than column "Levels". 
@@ -190,7 +186,7 @@ def ExtractElementLvl(df):
 
 def ElementLvl(df):
     df["ElmntLvl"]=df.apply(ExtractElementLvl,axis="columns")
-    logging.info("Element Level Added")
+    logger.info("Element Level Added")
 
 
 #Creates a clumn like "Element" and "ElmntLvl" for the Additional Feature. 
@@ -202,7 +198,7 @@ def ExtractFeat(val):
 
 def AddFeat(df):
     df[["AddFeat", "AFLvl"]] = df["AFNot"].apply(ExtractFeat).apply(pd.Series)
-    logging.info("Additional Feature Added")
+    logger.info("Additional Feature Added")
 
 
 ### --------------------------- Dataframe Build ------------------------------------
@@ -223,13 +219,13 @@ def pageIntoListDf(PdfLoader:PDFLoader,page:int):
         TableAsso(dfs,ListElem)
 
     else:
-        logging.warning("Not as Many Element as tables")
+        logger.warning("Not as Many Element as tables")
         return 
     return dfs
 
 def GOEtoFloat(df):
     df[GOE] = df[GOE].apply(lambda x: x.str.replace(',', '.').astype(float) if x.dtype == 'object' else x)
-    logging.info("GOE turned into Float")
+    logger.info("GOE turned into Float")
 
 def DfLvlAndDowngradest(df):
     
@@ -259,6 +255,6 @@ def CreateCSV(filename,beginpage,endpage,outputfilename):
     DfLvlAndDowngradest(BigDf)
     
     BigDf.to_csv(outputfilename)
-    logging.info(f"Created csv : {outputfilename}")
+    logger.info(f"Created csv : {outputfilename}")
     
 

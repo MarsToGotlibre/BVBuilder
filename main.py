@@ -4,11 +4,7 @@ from src.pdf_to_csv import CreateCSV
 from src.csv_to_json import returnJsonFile,Config
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,       
-    format="[%(levelname)s] - %(message)s"
-)
-
+logger = logging.getLogger(__name__)
 
 def build_parser():
     parser = argparse.ArgumentParser(
@@ -50,7 +46,12 @@ def build_parser():
 
     return parser
 
-
+def init_logging(level: str="INFO")-> logging.Logger:
+    numeric_level = getattr(logging, level.upper(), logging.INFO)
+    logging.basicConfig(
+        level=numeric_level,
+        format="[%(levelname)s] %(name)s - %(message)s"
+    )
 
 def check_file_exists(path):
 
@@ -64,7 +65,7 @@ def check_file_exists(path):
     #return path
 
 def check_extention(path,allowed_ext):
-    logging.debug(f"{path.suffix.lower()}")
+    logger.debug(f"{path.suffix.lower()}")
     if path.suffix.lower() != allowed_ext:
         raise ValueError(f"Invalid file type: {path.suffix}. Expected one of: {allowed_ext}")
 
@@ -118,7 +119,7 @@ def csv_to_json(args):
             check_extention(Path(args.output),".json")
     else :
         args.output = f"{path.stem}{name(args)}.json"
-        logging.debug(args.output)
+        logger.debug(args.output)
 
     returnJsonFile(path,jsonConfig(args),args.output)
 
@@ -142,7 +143,7 @@ if __name__ == "__main__":
     parser = build_parser()
     args = parser.parse_args()
     print()
-
+    init_logging()
     print(args)
     init_pipeline(args)
         
