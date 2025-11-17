@@ -10,14 +10,6 @@ logging.basicConfig(
 )
 
 
-class ConfigJson:
-    def __init__(self,LargeOutput,SeparateDowngrades,ReductionCategory,GOE):
-        self.LargeOutput =LargeOutput
-        self.SeparateDowngrades=SeparateDowngrades
-        self.ReductionCategory= ReductionCategory
-        self.GOE = GOE
-
-
 def build_parser():
     parser = argparse.ArgumentParser(
         description="Pipeline: PDF → CSV → JSON"
@@ -113,8 +105,8 @@ def pdf_to_csv(args):
             check_extention(Path(getattr(args,output)),".csv")
     else :
         setattr(args,output,f"{path.stem}-page-{str(args.begin)if args.begin==args.end else "("+str(args.begin)+"-"+str(args.end)+")"}.csv") 
-    #print(args.pdf_file,args.begin,args.end,output)
-    #CreateCSV(args.pdf_file,args.begin,args.end,args.output)
+    #print(args.pdf_file,args.begin,args.end,getattr(args,output))
+    CreateCSV(args.pdf_file,args.begin,args.end,getattr(args,output))
     #return getattr(args,output)
 
 def csv_to_json(args):
@@ -128,13 +120,21 @@ def csv_to_json(args):
         args.output = f"{path.stem}{name(args)}.json"
         logging.debug(args.output)
 
-    #returnJsonFile(path,jsonConfig(args),args.output)
+    returnJsonFile(path,jsonConfig(args),args.output)
 
 def pdf_to_json(args):
     pdf_to_csv(args)
     csv_to_json(args)
 
-
+def init_pipeline(args):
+    match args.pipeline:
+        case "pdftocsv":
+            pdf_to_csv(args)
+        case "csvtojson":
+            csv_to_json(args)
+        case "all":
+            print("all")
+            pdf_to_json(args)
  
 
 
@@ -144,8 +144,7 @@ if __name__ == "__main__":
     print()
 
     print(args)
-    print()
-    pdf_to_json(args)
-    
-    print()
-    print(args)
+    init_pipeline(args)
+        
+    config=Config()
+    print(config.largeOutput)
