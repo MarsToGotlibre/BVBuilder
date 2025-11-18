@@ -155,7 +155,8 @@ def returnDict(df,config:Config):
             dictElement["Downgrades"]=dict(zip(["<","<<"],dg))
             query="DGrade == 0"
             logger.info("Downgrades Separated")
-    
+    else:
+        config.Dg_Value(True)
 
     if config.reductionCategory:
         query=reductionCategory(df,dictElement,config)
