@@ -5,18 +5,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Config:
-    def __init__(self, largeOutput=False, separateDowngrades=True, reductionCategory=False, goe=False):
+    def __init__(self, largeOutput=False, inline_downgrades=False, reductionCategory=False, goe=False):
         self.largeOutput = largeOutput
-        self.separateDowngrades = separateDowngrades
+        self.inline_downgrades = inline_downgrades
         self.reductionCategory = reductionCategory
         self.goe = goe
     
     @classmethod
     def synchro_skate_calc(cls):
-        return cls(False,True,True,False)
+        return cls(False,False,True,False)
     
-    def Dg_Value(self,value:bool):
-        self.separateDowngrades=value
+    def inline_dg(self,value:bool):
+        self.inline_downgrades=value
 
 ### -------------- Are Category Equal--------------------
 
@@ -76,7 +76,7 @@ def fillElement(elementGroup,config:Config,element):
     
     #Without Additional Feature
     if elementGroup["AFNot"].isna().all():
-        if config.separateDowngrades:
+        if not config.inline_downgrades:
             for Lvl in elementGroup.itertuples():
                 element[Lvl.ElmntLvl]=outputValue(Lvl,config)
         else:
@@ -87,7 +87,7 @@ def fillElement(elementGroup,config:Config,element):
                     element[LvlElem][key]=outputValue(Dg,config)
    #with additional Feature                 
     else:
-        if config.separateDowngrades:
+        if not config.inline_downgrades:
             for LvlElem,GroupLvl in elementGroup.groupby('ElmntLvl'):
                 element[LvlElem]={}
                 for AddF in GroupLvl.itertuples():
@@ -112,7 +112,7 @@ def LargeJson(df):
 def reductionCategory(df,dictElement,config:Config):
     cat=FindCategoryofElements(df,df["Category"].unique())
    
-    if  config.separateDowngrades:
+    if  not config.inline_downgrades:
         query="DGrade == 0"
         tempdf = df.query(query)
     else:
@@ -147,16 +147,16 @@ def returnDict(df,config:Config):
     query=""
     if dg!=None :
         if not DowngradesValueEqual(df,dg) :
-            config.Dg_Value(False)
+            config.inline_dg(True)
             logger.info("Downgrades not equal, Downgrades not separated")
 
         
-        if config.separateDowngrades:
+        if not config.inline_downgrades:
             dictElement["Downgrades"]=dict(zip(["<","<<"],dg))
             query="DGrade == 0"
             logger.info("Downgrades Separated")
     else:
-        config.Dg_Value(True)
+        config.inline_dg(False)
 
     if config.reductionCategory:
         query=reductionCategory(df,dictElement,config)

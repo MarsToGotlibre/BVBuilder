@@ -15,7 +15,7 @@ def build_parser():
     # PARENT: options CSV → JSON
     json_parent = argparse.ArgumentParser(add_help=False)
     json_parent.add_argument("-l", "--large-output", action="store_true")
-    json_parent.add_argument("-d", "--separate-downgrades", action="store_true")
+    json_parent.add_argument("-i", "--inline_downgrades", action="store_true")
     json_parent.add_argument("-c", "--reduction-category", action="store_true")
     json_parent.add_argument("-g","--goe",action="store_true")
     json_parent.add_argument("-s", "--synchro-skate-calc", action="store_true")
@@ -79,8 +79,8 @@ def name(args):
         return"-large_output"
     if args.synchro_skate_calc:
         return"-synchro_skate_calc"
-    if args.separate_downgrades:
-        name+="-separate_downgrades"
+    if args.inline_downgrades:
+        name+="-inline_downgrades"
     if args.reduction_category:
         name+="-reduction_category"
     if args.goe:
@@ -90,7 +90,7 @@ def name(args):
 def jsonConfig(args):
     if args.synchro_skate_calc:
         return Config.synchro_skate_calc()
-    return Config(args.large_output,args.separate_downgrades,args.reduction_category,args.goe)
+    return Config(args.large_output,args.inline_downgrades,args.reduction_category,args.goe)
 
 def pdf_to_csv(args):
     path=Path(args.pdf_file)
