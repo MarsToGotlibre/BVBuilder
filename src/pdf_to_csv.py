@@ -87,7 +87,8 @@ def FindElementName(lines):
 ### -------------------------Find and associate tables --------------------------------
 
 def returnTablesFromPage(filename,pagenumber):
-    return tabula.read_pdf(filename, pages=pagenumber,pandas_options={"header":None})
+    Listtable=tabula.read_pdf(filename, pages=pagenumber,pandas_options={"header":None},guess=True,columns=[250,450,640,830,940,1050,1160,1270,1380,1490,1600,1710,1820,1930,2040])
+    return Listtable
 
 def CleanNonElementsTable(pagedf):
     i=0
@@ -128,7 +129,6 @@ def SetColumnName(dfs):
     for df in dfs:
         if df.shape[1]!=nbrCol: ## NOMBRE VARIBLE COLONNES
             logger.warning("One dataframe isn't the right size, return")
-            return
         else:
             df.columns=Header
 
