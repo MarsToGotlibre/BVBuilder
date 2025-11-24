@@ -106,7 +106,10 @@ def fillElement(elementGroup,config:Config,element):
 def LargeJson(df):
     element={}
     for row in df.itertuples():
-        element[row.ElmtNot]={"base":row.BASE,"goe":dict(zip(GOE,row[7:18]))}
+        if pd.isna(row.AFNot) or row.AFNot =="-":
+            element[row.ElmtNot]={"base":row.BASE,"goe":dict(zip(GOE,row[7:18]))}
+        else :
+            element[row.ElmtNot+"+"+row.AFNot]={"base":row.BASE,"goe":dict(zip(GOE,row[7:18]))}
     return element
 
 def reductionCategory(df,dictElement,config:Config):
