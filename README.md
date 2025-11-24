@@ -2,4 +2,225 @@
  
  BV builder is a tool to convert Synchronise Skating Base Value PDF to CSV and jsons using python.
  
-  
+## Installation
+Requires:
+
+- Python 3.10+
+- Java 8+ (for tabula-py)
+- Python dependencies : `pdfblumber`, `tabula-py`, `pandas`
+```
+pip install pdfplumber tabula-py pandas
+```
+
+
+# Usage
+BVBuilder provides three subcommands:
+- `pdftocsv` — extract CSV from the PDF
+- `csvtojson` — build JSON from CSV
+- `all` — full pipeline from PDF to JSON
+
+### General use
+```
+python main.py <pipeline> input.file [Options]
+```
+
+## `pdftocsv` :  Transforms PDF to csv
+
+### Command
+```
+python main.py pdftocsv <pdf_file> [-b BEGIN] [-e END] [-o OUTPUT]
+```
+### Arguments
+| Option | Description|
+| ----- | --------- |
+| `-b, --begin`  | First Page |
+| `-e, --end`  | Last page (optional)|
+| `-o, --output` | output file name (optional) |
+
+### Notes :
+- If end page not specified, **only the begin page is processed**
+- If no output entered, BVbuilder generates one automatically : 
+```
+pdf_example-page-1.csv
+pdf_example-page-(3-6).csv
+```
+### Examples :
+```
+python main.py pdftocsv pdf_example.pdf -b 4 -e 6
+```
+Output : `pdf_example-page-(4-6).csv` 
+
+##  `csvtojson` :  Transforms csv to json
+
+### Command :
+```sh
+python main.py csvtojson <csv_file> [options]
+```
+
+### Arguments
+
+| Option                     | Description   | ex|
+| -------------------------- | ------------- | ----|
+| `-l, --large-output`       | **Exclusive mode.** Produces one JSON entry per CSV row. Can't be combined with other options.      |[#](#large-output)|
+| `-i, --inline-downgrades`  | Places downgrade values directly inside each element level instead of in a separate structure.      |[#](#inline-downgrades)|
+| `-c, --reduction-category` | Groups elements of a category into a single category entry if they have the same value.             |[#](#reduction-category)|
+| `-g, --goe`                | Includes GOE values in the output JSON.                                                             |[#](#goe) |
+| `-s, --synchro-skate-calc` | Enables generation of the SynchroSkateCalc JSON. Currently equivalent to `--reduction-category`.    ||
+| `-o, --output OUTPUT`      | Output JSON filename (optional).                                                                    ||
+
+
+
+
+## `all` - Full pipeline (PDF 🠖 CSV 🠖 JSON)
+
+```
+python main.py all <pdf_file> -b BEGIN -e END --temp-csv temp.csv [other json options]
+```
+This command runs the entire processing pipeline:
+
+- PDF 🠖 CSV
+- CSV 🠖 JSON
+
+The available options are the same as in the two separate commands (`pdftocsv` and `csvtojson`).
+
+### Temporary CSV handling
+
+During the process, BVBuilder automatically generates a CSV file.
+This is useful because the PDF extraction step is the most resource-intensive part (due to the use of Java though `tabula-py`).
+Keeping a CSV backup ensures you don’t need to re-process the PDF if something goes wrong during JSON generation.
+
+You can choose the name of this temporary file using the `--temp-csv` option.
+
+### Note
+
+The CSV file is not deleted automatically after JSON generation.
+You may remove it manually if you no longer need it.
+
+# Output
+
+## CSV output 
+
+
+| Column | Description | Info | 
+| - | - | ---- |
+|`Category`|The category the element is in|Some element are listed under a category with this Format : ***ARTISTIC ELEMENTS - Artistic Block (AB)***. This Columns stores "***ARTISTIC ELEMENTS***". If the Element doesnt have  a category, the element name is used to fill this.|
+|`ElmtName`|Element Name|To take the same example, here it could be "**Artistic Block**"|
+|`Levels`|Level shown in the PDF|Includes the level contributed by the Additional Feature. This differs from `ElmtLvl`.|
+|`ElmtNot`|Element Notation|Symbol+level+downgrade string as written in the PDF.|
+|`Element`|Element symbol |Extracted from `ElmtNot`. For Example if `ElmtNot` = `ME3`, this column would contain `ME`.|
+|`ElmtLvl`|Element Level|Pure element level for element like `I3+pi2`, this would be equal to `3`|
+|`AFNot`|Additional feature notation|Additinal Feature column in the pdf|
+|`-5, -4, -3, -2, -1, 1, 2, 3, 4` and `5`|GOE values|GOE columns extracted from the PDF tables.|
+|`BASE`|Element Base value|---|
+|`DGrade`| Dowgrade count|0 = none, 1 = `<`, 2 = `<<`.|
+|`AddFeat`|Additional feature symbol|---|
+|`AFLvl`|Additional Feature Level|---|
+
+## JSON Output
+
+The json default structure is like this :
+```json
+{
+  "Element": {
+    "ElmntLvl": /* BASE */
+  },
+  "Element":{
+    "ElmtLvl":{
+      "AddFeat": /* BASE */
+    }
+  },
+  "Downgrades":{
+    "<":/* value */,
+    "<<":/* value */
+  }
+}
+```
+`/*BASE*/` Being the value of the CSV `BASE` column.
+
+By using options you will modify the structure as follows :
+
+---
+
+### GOE
+**Command** : `--goe,-g`  
+Insead of just the `BASE` column the end will be provided with more detailed tree including the goe values.  
+What is added :
+```json
+{
+  "base":/*BASE*/
+  "goe":{
+    "-5": /*...*/,
+    "-4": /*v*/,
+    "-3": /*...*/,
+    "-2": /*...*/,
+    "-1": /*...*/,
+    "BASE": /*...*/,
+    "1": /*...*/,
+    "2": /*...*/,
+    "3": /*...*/,
+    "4": /*...*/,
+    "5": /*...*/
+  }
+}
+```
+
+### Inline downgrades
+**Command** : `--inline-donwgrades, -i`   
+Places downgrade values directly inside each element level instead of in a separate structure. This Creates the following structure :
+```json
+{
+  "Element": {
+    "ElmtLvl": {
+      "NoDg": /* BASE */,
+      "<": /* BASE */,
+      "<<": /* BASE */
+    }
+  }
+}
+
+```
+
+|Key|DGrade|Meaning|
+|--------- |---------|------------|
+|`"NoDg"`| `0` | No downgades|
+|`"<"`| `1` | One downgades|
+|`"<<"`| `2` | Two downgades|
+
+If no downgrades are found for a given level, only the `"NoDg"` entry will be added in the JSON.
+### Reduction category
+**Command** : `--reduction-category, -c`  
+Groups multiple elements into a single category entry if they share the same base/GOE values.
+Here's an Example with `Artistic Elements`
+#### Before :
+```json
+{
+  "AB":{},
+  "AC":{},
+  "AL":{},
+  "AW":{}
+}
+```
+#### After
+```json
+{
+  "A": {}
+}
+```
+If no prefix exists (like the `A` here), the `Category` column will be used instead.
+
+### Large output
+**Command** : `--large-outpu, -l`
+This is the only option that doesn't respect this pattern. Here's an example :
+```json
+{
+  "ME3<": {
+    "base": 3.0,
+    "goe": { /* GOE values */ }
+  },
+  "I2-pi1": {
+    "base": 2.5,
+    "goe": { /* ... */ }
+  }
+}
+```
+This output resembles the result of the `--goe` option.
