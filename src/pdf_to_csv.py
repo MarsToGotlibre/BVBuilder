@@ -39,13 +39,11 @@ def returnPageLines(filename,pagenumber):
     page = pdf.pages[pagenumber-1]
     return page.extract_text_lines(return_chars=False)
 
-def Element(Category,Element,Symbol):
-    Dictionnaire={
-        "Category":Category,
-        "Element":Element,
-        "Symbol":Symbol
-    }
-    return Dictionnaire
+class Element:
+    def __init__(self, Category, Element, Symbol):
+        self.Category = Category
+        self.Element = Element
+        self.Symbol = Symbol
 
 pattern = re.compile(
     r"""
@@ -135,9 +133,9 @@ def SetColumnName(dfs):
 def TableAsso(dfs,ListElem):
     indexList=0
     for df in dfs:
-        df.insert(loc=2, column="Element", value=ListElem[indexList]["Symbol"])
-        df.insert(loc=0, column="ElmtName",value=ListElem[indexList]["Element"])
-        df.insert(loc=0, column="Category",value=ListElem[indexList]["Category"])
+        df.insert(loc=2, column="Element", value=ListElem[indexList].Symbol)
+        df.insert(loc=0, column="ElmtName",value=ListElem[indexList].Element)
+        df.insert(loc=0, column="Category",value=ListElem[indexList].Category)
         indexList+=1
 
 def VerifyAsso(dfs):
