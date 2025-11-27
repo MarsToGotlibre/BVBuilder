@@ -30,6 +30,12 @@ class PDFLoader:
         except Exception as e:
             logger.error(f"Error on page {pagenumber}: {e}")
             return None
+    
+    def get_all_pages_lines(self,beginpage,endpage):
+        lines = []
+        for page in range(beginpage, endpage +1):
+            lines+= self.pdf.pages[page-1].extract_text_lines(return_chars=False)
+        return lines
 
     def close(self):
         self.pdf.close()
@@ -88,6 +94,10 @@ def returnTablesFromPage(filename,pagenumber):
     Listtable=tabula.read_pdf(filename, pages=pagenumber,pandas_options={"header":None},guess=True,columns=[250,450,640,830,940,1050,1160,1270,1380,1490,1600,1710,1820,1930,2040])
     return Listtable
 
+def return_all_tables(filename,beginpage,endpage):
+    pages=[i for i in range (beginpage,endpage +1)] 
+    ListTable=tabula.read_pdf(filename, pages=pages,pandas_options={"header":None},guess=True,columns=[250,450,640,830,940,1050,1160,1270,1380,1490,1600,1710,1820,1930,2040])
+    return ListTable
 def CleanNonElementsTable(pagedf):
     i=0
     logger.info("Verifing if all df are the right size")
@@ -221,6 +231,25 @@ def pageIntoListDf(PdfLoader:PDFLoader,page:int):
         return 
     return dfs
 
+def all_pages_into_df(pdfLoader:PDFLoader,beginpage,endpage):
+    lines=pdfLoader.get_all_pages_lines(beginpage,endpage)
+    pdfLoader.close()
+    ListElem=FindElementName(lines)
+    dfs=return_all_tables(pdfLoader.filename,beginpage,endpage)
+    
+    CleanNonElementsTable(dfs)
+    if TitleAsManyTable(dfs,ListElem):
+        CleanNaNLines(dfs)
+        
+        SetColumns(dfs)
+        SetColumnName(dfs)
+        TableAsso(dfs,ListElem)
+
+    else:
+        logger.warning("Not as Many Element as tables")
+        return 
+    return dfs
+
 def GOEtoFloat(df):
     df[GOE] = df[GOE].apply(lambda x: x.str.replace(',', '.').astype(float) if x.dtype == 'object' else x)
     logger.info("GOE turned into Float")
@@ -247,8 +276,16 @@ def ExtractDocumentperPage(filename,beginpage,endpage):
     pdfloader.close()
     return DfList
 
+def extrat_document(filename,beginpage,endpage):
+    pdfloader=PDFLoader(filename)
+    DfList=all_pages_into_df(pdfloader,beginpage,endpage)
+    if VerifyAsso(DfList):
+        return DfList
+    else:
+        raise IndexError("Something whent wrong with association")
+
 def CreateCSV(filename,beginpage,endpage,outputfilename):
-    DFList=ExtractDocumentperPage(filename,beginpage,endpage)
+    DFList=extrat_document(filename,beginpage,endpage)
     BigDf=pd.concat(DFList,ignore_index=True)
     DfLvlAndDowngradest(BigDf)
     
