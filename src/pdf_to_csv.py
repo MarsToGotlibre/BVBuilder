@@ -40,10 +40,6 @@ class PDFLoader:
     def close(self):
         self.pdf.close()
 
-def returnPageLines(filename,pagenumber):
-    pdf = pdfplumber.open(filename)
-    page = pdf.pages[pagenumber-1]
-    return page.extract_text_lines(return_chars=False)
 
 class Element:
     def __init__(self, Category, Element, Symbol):
@@ -90,14 +86,12 @@ def FindElementName(lines):
 
 ### -------------------------Find and associate tables --------------------------------
 
-def returnTablesFromPage(filename,pagenumber):
-    Listtable=tabula.read_pdf(filename, pages=pagenumber,pandas_options={"header":None},guess=True,columns=[250,450,640,830,940,1050,1160,1270,1380,1490,1600,1710,1820,1930,2040])
-    return Listtable
 
 def return_all_tables(filename,beginpage,endpage):
     pages=[i for i in range (beginpage,endpage +1)] 
     ListTable=tabula.read_pdf(filename, pages=pages,pandas_options={"header":None},guess=True,columns=[250,450,640,830,940,1050,1160,1270,1380,1490,1600,1710,1820,1930,2040])
     return ListTable
+
 def CleanNonElementsTable(pagedf):
     i=0
     logger.info("Verifing if all df are the right size")
@@ -211,25 +205,6 @@ def AddFeat(df):
 
 ### --------------------------- Dataframe Build ------------------------------------
 
-def pageIntoListDf(PdfLoader:PDFLoader,page:int):
-    #lines=returnPageLines(filename,page)
-    lines=PdfLoader.get_page_lines(page)
-    ListElem=FindElementName(lines)
-
-    dfs=returnTablesFromPage(PdfLoader.filename,page)
-    
-    CleanNonElementsTable(dfs)
-    if TitleAsManyTable(dfs,ListElem):
-        CleanNaNLines(dfs)
-        
-        SetColumns(dfs)
-        SetColumnName(dfs)
-        TableAsso(dfs,ListElem)
-
-    else:
-        logger.warning("Not as Many Element as tables")
-        return 
-    return dfs
 
 def all_pages_into_df(pdfLoader:PDFLoader,beginpage,endpage):
     lines=pdfLoader.get_all_pages_lines(beginpage,endpage)
@@ -264,17 +239,6 @@ def DfLvlAndDowngradest(df):
 
     GOEtoFloat(df)
 
-def ExtractDocumentperPage(filename,beginpage,endpage):
-    DfList=[]
-    pdfloader=PDFLoader(filename)
-
-    for page in range(beginpage,endpage+1):
-        pageList=pageIntoListDf(pdfloader,page)
-        if VerifyAsso(pageList):
-            DfList+=pageList
-
-    pdfloader.close()
-    return DfList
 
 def extrat_document(filename,beginpage,endpage):
     pdfloader=PDFLoader(filename)
