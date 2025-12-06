@@ -1,7 +1,33 @@
 # BVBuilder
  
  BV builder is a tool to convert Synchronise Skating Base Value PDF to CSV and jsons using python.
+
+ This repo provides : 
+
+ - a CLI tool to parse your pdf and csv
+ - jupyter notebooks for each pipeline in `Notebook` folder if you want to modify the csv or json ouputs.
  
+<details open>
+
+<summary> <strong>Index</strong> </summary>
+
+1. [Installation](#installation)
+2. [CLI usage](#cli-usage)
+    1. [PDF to CSV](#pdf-to-csv)
+    2. [CSV to JSON](#csv-to-json)
+    3. [Full Pipeline](#full-pipeline)
+3. [Output](#output)
+    1. [CSV output](#csv-output)
+    2. [JSON output](#json-output)
+        1. [GOE](#goe)
+        2. [Reduction category](#reduction-category)
+        3. [Inline downgrades](#inline-downgrades)
+        4. [Large output](#large-output)
+
+</details>
+
+
+
 ## Installation
 Requires:
 
@@ -13,7 +39,7 @@ pip install pdfplumber tabula-py pandas
 ```
 
 
-# Usage
+# CLI usage
 BVBuilder provides three subcommands:
 - `pdftocsv` — extract CSV from the PDF
 - `csvtojson` — build JSON from CSV
@@ -21,10 +47,10 @@ BVBuilder provides three subcommands:
 
 ### General use
 ```
-python main.py <pipeline> input.file [Options]
+python main.py <pipeline> <input file> [Options]
 ```
 
-## `pdftocsv` :  Transforms PDF to csv
+## PDF to CSV
 
 ### Command
 ```
@@ -50,7 +76,7 @@ python main.py pdftocsv pdf_example.pdf -b 4 -e 6
 ```
 Output : `pdf_example-page-(4-6).csv` 
 
-##  `csvtojson` :  Transforms csv to json
+##  CSV to JSON
 
 ### Command :
 ```sh
@@ -71,7 +97,7 @@ python main.py csvtojson <csv_file> [options]
 
 
 
-## `all` - Full pipeline (PDF 🠖 CSV 🠖 JSON)
+## Full pipeline
 
 ```
 python main.py all <pdf_file> -b BEGIN -e END --temp-csv temp.csv [other json options]
