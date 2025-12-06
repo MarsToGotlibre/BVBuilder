@@ -150,16 +150,16 @@ def returnDict(df,config:Config):
     query=""
     if dg!=None :
         if not DowngradesValueEqual(df,dg) :
-            config.inline_dg(True)
-            logger.info("Downgrades not equal, Downgrades not separated")
+            logger.info("Downgrades values aren't equal")
+            if config.inline_dg == False :
+                config.inline_dg(True)
+                logger.warning("Inline downgrade option will be applied")
 
         
         if not config.inline_downgrades:
             dictElement["Downgrades"]=dict(zip(["<","<<"],dg))
             query="DGrade == 0"
             logger.info("Downgrades Separated")
-    else:
-        config.inline_dg(False)
 
     if config.reductionCategory:
         query=reductionCategory(df,dictElement,config)
