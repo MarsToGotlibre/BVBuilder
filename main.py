@@ -134,7 +134,6 @@ def init_pipeline(args):
         case "csvtojson":
             csv_to_json(args)
         case "all":
-            print("all")
             pdf_to_json(args)
  
 
@@ -142,10 +141,7 @@ def init_pipeline(args):
 if __name__ == "__main__":
     parser = build_parser()
     args = parser.parse_args()
-    print()
+
     init_logging()
-    print(args)
-    init_pipeline(args)
-        
-    config=Config()
-    print(config.largeOutput)
+
+    init_pipeline(args) 
