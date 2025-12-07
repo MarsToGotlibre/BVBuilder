@@ -75,12 +75,13 @@ def FindElementName(lines):
                         logger.debug("\t Sub Pattern found : " , sub)
                         ListeElem.append(Element(Groupe,sub,sym))
                     else:
-                        logger.debug("\t Sub patttern whitout group announced : " , sub)
+                        logger.debug(f"Sub patttern whitout group announced : {cat} - {sub} " )
                         ListeElem.append(Element(cat,sub,sym))
                     
                 else:
                     logger.debug("Simple element found", cat)
                     ListeElem.append(Element(cat,cat,sym))
+                    Groupe=""
     return ListeElem
 
 
