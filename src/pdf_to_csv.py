@@ -253,7 +253,7 @@ def CreateCSV(filename,beginpage,endpage,outputfilename):
     BigDf=pd.concat(DFList,ignore_index=True)
     DfLvlAndDowngradest(BigDf)
     
-    BigDf.to_csv(outputfilename)
+    BigDf.to_csv(outputfilename,index=False)
     logger.info(f"Created csv : {outputfilename}")
     
 
