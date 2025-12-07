@@ -1,11 +1,23 @@
 # BVBuilder
  
- BV builder is a tool to convert Synchronise Skating Base Value PDF to CSV and jsons using python.
+BV Builder is a command-line tool designed to convert *Synchronized Skating* Scale of Value PDFs into clean, structured CSV and JSON files.
 
- This repo provides : 
+### Features
+- Extracts Synchronized Skating Scale of Value data from ISU PDFs.
+- Converts PDFs to structured CSV files.
+- Builds multiple JSON formats ([GOE](#goe), [inline downgrades](#inline-downgrades), [reduction](#reduction-category), [large-output](#large-output)…)
+- Modular pipeline: PDF ➞ CSV, CSV ➞ JSON, or full chain.
+- Jupyter notebooks for customization.
+- Example outputs are included.
 
- - a CLI tool to parse your pdf and csv
- - jupyter notebooks for each pipeline in `Notebook` folder if you want to modify the csv or json ouputs.
+### Content of this repository
+
+ - **A CLI tool** for PDF and CSV parsing
+ - **Jupyter notebooks** to understand or customize pipelines( [`Notebook/`](/Notebook/)
+ )
+ - **Example files** of CSV and JSON outputs [`examples/`](/examples/README.md) 
+
+ ---
  
 <details open>
 
@@ -20,9 +32,9 @@
     1. [CSV output](#csv-output)
     2. [JSON output](#json-output)
         1. [GOE](#goe)
-        2. [Reduction category](#reduction-category)
-        3. [Inline downgrades](#inline-downgrades)
-        4. [Large output](#large-output)
+        2. [Reduction Category](#reduction-category)
+        3. [Inline Downgrades](#inline-downgrades)
+        4. [Large Output](#large-output)
 
 </details>
 
@@ -33,14 +45,14 @@ Requires:
 
 - Python 3.10+
 - Java 8+ (for tabula-py)
-- Python dependencies : `pdfblumber`, `tabula-py`, `pandas`
+- Python dependencies : `pdfplumber`, `tabula-py`, `pandas`
 ```
 pip install pdfplumber tabula-py pandas
 ```
 
 
 # CLI usage
-BVBuilder provides three subcommands:
+BVBuilder provides three subcommands for each pipeline:
 - `pdftocsv` — extract CSV from the PDF
 - `csvtojson` — build JSON from CSV
 - `all` — full pipeline from PDF to JSON
@@ -61,7 +73,7 @@ python main.py pdftocsv <pdf_file> [-b BEGIN] [-e END] [-o OUTPUT]
 | ----- | --------- |
 | `-b, --begin`  | First Page |
 | `-e, --end`  | Last page (optional)|
-| `-o, --output` | output file name (optional) |
+| `-o, --output` | Output file name (optional) |
 
 ### Notes :
 - If end page not specified, **only the begin page is processed**
@@ -91,7 +103,7 @@ python main.py csvtojson <csv_file> [options]
 | `-i, --inline-downgrades`  | Places downgrade values directly inside each element level instead of in a separate structure.      |[#](#inline-downgrades)|
 | `-c, --reduction-category` | Groups elements of a category into a single category entry if they have the same value.             |[#](#reduction-category)|
 | `-g, --goe`                | Includes GOE values in the output JSON.                                                             |[#](#goe) |
-| `-s, --synchro-skate-calc` | Enables generation of the SynchroSkateCalc JSON. Currently equivalent to `--reduction-category`.    ||
+| `-s, --synchro-skate-calc` | Generation of the SynchroSkateCalc JSON. Currently equivalent to `--reduction-category`.    ||
 | `-o, --output OUTPUT`      | Output JSON filename (optional).                                                                    ||
 
 
@@ -138,13 +150,13 @@ You may remove it manually if you no longer need it.
 |`AFNot`|Additional feature notation|Additinal Feature column in the pdf|
 |`-5, -4, -3, -2, -1, 1, 2, 3, 4` and `5`|GOE values|GOE columns extracted from the PDF tables.|
 |`BASE`|Element Base value|---|
-|`DGrade`| Dowgrade count|0 = none, 1 = `<`, 2 = `<<`.|
+|`DGrade`| Downgrade count|0 = none, 1 = `<`, 2 = `<<`.|
 |`AddFeat`|Additional feature symbol|---|
 |`AFLvl`|Additional Feature Level|---|
 
 ## JSON Output
 
-The json default structure is like this :
+The default JSON structure is :
 ```json
 {
   "Element": {
@@ -176,7 +188,7 @@ What is added :
   "base":/*BASE*/
   "goe":{
     "-5": /*...*/,
-    "-4": /*v*/,
+    "-4": /*...*/,
     "-3": /*...*/,
     "-2": /*...*/,
     "-1": /*...*/,
@@ -190,9 +202,10 @@ What is added :
 }
 ```
 
-### Inline downgrades
-**Command** : `--inline-donwgrades, -i`   
-Places downgrade values directly inside each element level instead of in a separate structure. This Creates the following structure :
+### Inline Downgrades
+**Command** : `--inline-downgrades, -i`   
+Places downgrades values directly inside each element level instead of in a separate structure. 
+This Creates the following structure :
 ```json
 {
   "Element": {
@@ -208,12 +221,12 @@ Places downgrade values directly inside each element level instead of in a separ
 
 |Key|DGrade|Meaning|
 |--------- |---------|------------|
-|`"NoDg"`| `0` | No downgades|
-|`"<"`| `1` | One downgades|
-|`"<<"`| `2` | Two downgades|
+|`"NoDg"`| `0` | No downgrade|
+|`"<"`| `1` | One downgrades|
+|`"<<"`| `2` | Two downgrades|
 
 If no downgrades are found for a given level, only the `"NoDg"` entry will be added in the JSON.
-### Reduction category
+### Reduction Category
 **Command** : `--reduction-category, -c`  
 Groups multiple elements into a single category entry if they share the same base/GOE values.
 Here's an Example with `Artistic Elements`
@@ -234,8 +247,8 @@ Here's an Example with `Artistic Elements`
 ```
 If no prefix exists (like the `A` here), the `Category` column will be used instead.
 
-### Large output
-**Command** : `--large-outpu, -l`
+### Large Output
+**Command** : `--large-output, -l`  
 This is the only option that doesn't respect this pattern. Here's an example :
 ```json
 {
